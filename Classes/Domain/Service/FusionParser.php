@@ -32,7 +32,7 @@ class FusionParser extends AbstractParser
         if (!isset($prototypeDefinition['__meta']['doc'])) {
             return null;
         }
-        
+
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($prototypeDefinition);
         // \Neos\Flow\var_dump($prototypeName);
         $propertyDefinitions = $this->parseFusionPropertyDefinitions($prototypeDefinition);
@@ -49,40 +49,47 @@ class FusionParser extends AbstractParser
     protected function parseFusionPropertyDefinitions(array $prototypeDefinition): array
     {
         $propertyDefinitions = [];
-        if(!isset($prototypeDefinition['__meta']['propTypes'])) {
+        if (!isset($prototypeDefinition['__meta']['propTypes'])) {
             return $propertyDefinitions;
         }
         foreach ($prototypeDefinition['__meta']['propTypes'] as $propTypeName => $propType) {
-            if($propTypeName === "__meta") {
-                // TODO: handle @meta proptypes
+            if ($propTypeName === "__meta") {
                 continue;
-            } 
+            }
             $propertyDefinitions[] = $this->parseFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition);
+        }
+
+        if (isset($prototypeDefinition['__meta']['propTypes']['__meta']['meta'])) {
+            $metaProperties = $prototypeDefinition['__meta']['propTypes']['__meta']['meta'];
+            foreach ($metaProperties as $propTypeName => $propType) {
+                $propertyDefinitions[] = $this->parseFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition, true);
+            }
         }
 
         return $propertyDefinitions;
     }
 
-    protected function parseFusionPropertyDefinition(string $propTypeName, array $propType, array $prototypeDefinition): FusionPropertyDefinition
+    protected function parseFusionPropertyDefinition(string $propTypeName, array $propType, array $prototypeDefinition, bool $isMetaProperty = false): FusionPropertyDefinition
     {
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($propType);
         $required = str_ends_with($propType['__eelExpression'], ".isRequired");
 
         $default = null;
-        if(isset($prototypeDefinition[$propTypeName])) {
+        if (!$isMetaProperty && isset($prototypeDefinition[$propTypeName])) {
             $default = $this->parseDefaultValue($prototypeDefinition[$propTypeName]);
         }
 
-        return new FusionPropertyDefinition($propTypeName, $required, '', $default, $summary, $description);
+        return new FusionPropertyDefinition(($isMetaProperty ? '@' : '') . $propTypeName, $required, '', $default, $summary, $description);
     }
 
-    protected function parseDefaultValue(mixed $prop) {
-        if(is_string($prop)) {
+    protected function parseDefaultValue(mixed $prop)
+    {
+        if (is_string($prop)) {
             return $prop;
         }
         // \Neos\Flow\var_dump($prop);
-        if( $prop['__eelExpression'] !== null) {
-            return "\${".$prop['__eelExpression']."}";
+        if ($prop['__eelExpression'] !== null) {
+            return "\${" . $prop['__eelExpression'] . "}";
         }
 
         return null;

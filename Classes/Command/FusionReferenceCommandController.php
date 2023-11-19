@@ -108,7 +108,6 @@ class FusionReferenceCommandController extends CommandController
         foreach ($prototypeDefinitions as $prototypeName => $prototypeDefinition) {
             if($reference = $classParser->parse($prototypeDefinition, $prototypeName)) {
                 $prototypeReferences[$prototypeName] = $reference;
-                \Neos\Flow\var_dump($reference);
             }
         }
         usort($prototypeReferences, static function (FusionReference $a, FusionReference $b) {
