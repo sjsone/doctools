@@ -4,38 +4,19 @@
 
 This reference was automatically generated from code on {f:format.date(date: 'now')}
 
-<f:for each="{classReferences}" as="classReference">
-.. _`{title}: {classReference.title}`:
+<f:for each="{prototypeReferences}" as="prototypeReference">
+.. _`{title}: {prototypeReference.title}`:
 
-<d:format.underline withCharacter="-">{classReference.title}{f:if(condition: classReference.deprecationNote, then: ' (deprecated)')}</d:format.underline>
-
-{classReference.description -> f:format.raw()}
-<f:if condition="{classReference.deprecationNote}">
-
-**DEPRECATED** {classReference.deprecationNote}
-</f:if>
-<f:if condition="{classReference.argumentDefinitions}">
-
-Arguments
-*********
-<f:for each="{classReference.argumentDefinitions}" as="argument">
-* ``{argument.name}`` ({argument.type}{f:if(condition: argument.required, else: ', *optional*')})<f:if condition="{argument.description}">: {argument.description -> d:format.indent(indent: '  ', inline: true) -> f:format.raw()}</f:if>
+<d:format.underline withCharacter="-">{prototypeReference.title}{f:if(condition: prototypeReference.deprecationNote, then: ' (deprecated)')}</d:format.underline>
+{prototypeReference.summary -> f:format.raw()}
+<f:if condition="{prototypeReference.propertyDefinitions}">
+<f:for each="{prototypeReference.propertyDefinitions}" as="argument">
+* ``{argument.name}`` ({argument.type}{f:if(condition: argument.required, else: ', *optional*')})<f:if condition="{argument.summary}">: {argument.summary -> d:format.indent(indent: '  ', inline: true) -> f:format.raw()}</f:if>
 </f:for>
 </f:if>
-<f:if condition="{classReference.codeExamples}">
+{prototypeReference.description -> f:format.raw()}
+<f:if condition="{prototypeReference.deprecationNote}">
 
-Examples
-********
-<f:for each="{classReference.codeExamples}" as="example">
-**{example.title}**::
-
-{example.code -> d:format.indent() -> f:format.raw()}
-<f:if condition="{example.output}">
-
-Expected result::
-
-{example.output -> d:format.indent() -> f:format.raw()}
-</f:if>
-</f:for>
+**DEPRECATED** {prototypeReference.deprecationNote}
 </f:if>
 </f:for>

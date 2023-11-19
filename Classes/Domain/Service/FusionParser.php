@@ -16,8 +16,10 @@ use Neos\DocTools\Domain\Model\ArgumentDefinition;
 use Neos\DocTools\Domain\Model\ClassReference;
 use Neos\DocTools\Domain\Model\CodeExample;
 use Neos\DocTools\Domain\Model\FusionPropertyDefinition;
+use Neos\DocTools\Domain\Model\FusionReference;
 use Neos\Flow\Reflection\ClassReflection;
 use Neos\Flow\Reflection\Exception\ClassLoadingForReflectionFailedException;
+use PHPUnit\Framework\Error\Deprecated;
 
 /**
  * Neos.DocTools parser for classes. Extended by target specific
@@ -27,26 +29,34 @@ class FusionParser extends AbstractParser
 {
     final public function parse(array $prototypeDefinition, string $prototypeName): mixed
     {
-        \Neos\Flow\var_dump($prototypeName);
         if (!isset($prototypeDefinition['__meta']['doc'])) {
             return null;
         }
-
-        $prototypeDoc = $this->parseMetaDoc($prototypeDefinition);
+        
+        ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($prototypeDefinition);
+        // \Neos\Flow\var_dump($prototypeName);
         $propertyDefinitions = $this->parseFusionPropertyDefinitions($prototypeDefinition);
 
+        $deprecationNote = '';
+        if (isset($prototypeDefinition['__meta']['deprecated']) && is_string($prototypeDefinition['__meta']['deprecated'])) {
+            $deprecationNote = $prototypeDefinition['__meta']['deprecated'];
+        }
 
-        \Neos\Flow\var_dump(($propertyDefinitions));
 
-        die();
-        return null;
+        return new FusionReference($prototypeName, $description, $summary, $propertyDefinitions, $deprecationNote);
     }
 
     protected function parseFusionPropertyDefinitions(array $prototypeDefinition): array
     {
         $propertyDefinitions = [];
-
+        if(!isset($prototypeDefinition['__meta']['propTypes'])) {
+            return $propertyDefinitions;
+        }
         foreach ($prototypeDefinition['__meta']['propTypes'] as $propTypeName => $propType) {
+            if($propTypeName === "__meta") {
+                // TODO: handle @meta proptypes
+                continue;
+            } 
             $propertyDefinitions[] = $this->parseFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition);
         }
 
@@ -55,10 +65,6 @@ class FusionParser extends AbstractParser
 
     protected function parseFusionPropertyDefinition(string $propTypeName, array $propType, array $prototypeDefinition): FusionPropertyDefinition
     {
-
-        // \Neos\Flow\var_dump($prototypeDefinition);
-        // \Neos\Flow\var_dump($prototypeDefinition['__meta']['propTypes']);
-
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($propType);
         $required = str_ends_with($propType['__eelExpression'], ".isRequired");
 
@@ -84,6 +90,7 @@ class FusionParser extends AbstractParser
 
     protected function parseMetaDoc(mixed $definition)
     {
+        // \Neos\Flow\var_dump($definition);
         if (is_string($definition['__meta']['doc'])) {
             return ['summary' => $definition['__meta']['doc'], 'description' => null];
         }

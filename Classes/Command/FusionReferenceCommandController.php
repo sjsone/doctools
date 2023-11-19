@@ -101,15 +101,17 @@ class FusionReferenceCommandController extends CommandController
         $prototypeDefinitions = $this->getPrototypeDefinitions($referenceConfiguration['fusionPaths']);
         $parserClassName = $referenceConfiguration['parser']['implementationClassName'];
         $parserOptions = $referenceConfiguration['parser']['options'] ?? [];
+
         /** @var $classParser FusionParser */
         $classParser = new $parserClassName($parserOptions);
-        $classReferences = [];
+        $prototypeReferences = [];
         foreach ($prototypeDefinitions as $prototypeName => $prototypeDefinition) {
             if($reference = $classParser->parse($prototypeDefinition, $prototypeName)) {
-                $classReferences[$prototypeName] = $reference;
+                $prototypeReferences[$prototypeName] = $reference;
+                \Neos\Flow\var_dump($reference);
             }
         }
-        usort($classReferences, static function (FusionReference $a, FusionReference $b) {
+        usort($prototypeReferences, static function (FusionReference $a, FusionReference $b) {
             if ($a->getTitle() === $b->getTitle()) {
                 return 0;
             }
@@ -120,7 +122,7 @@ class FusionReferenceCommandController extends CommandController
         $templatePathAndFilename = $referenceConfiguration['templatePathAndFilename'] ?? $this->defaultTemplatePath;
         $standaloneView->setTemplatePathAndFilename($templatePathAndFilename);
         $standaloneView->assign('title', $referenceConfiguration['title'] ?? $reference);
-        $standaloneView->assign('classReferences', $classReferences);
+        $standaloneView->assign('prototypeReferences', $prototypeReferences);
         file_put_contents($referenceConfiguration['savePathAndFilename'], $standaloneView->render());
         $this->outputLine('Written to: ' . $referenceConfiguration['savePathAndFilename']);
         $this->outputLine('DONE.');

@@ -31,4 +31,24 @@ class FusionPropertyDefinition
     {
         return $this->name;
     }
+
+    public function getRequired(): bool
+    {
+        return $this->required;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function getSummary(): ?string
+    {
+        return $this->summary;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
 }

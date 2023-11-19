@@ -29,8 +29,8 @@ class FusionReference
      */
     public function __construct(
         protected string $title,
-        protected string $description,
-        protected string $summary,
+        protected ?string $description,
+        protected ?string $summary,
         protected array $propertyDefinitions,
         protected string $deprecationNote,
     ) {
@@ -42,9 +42,14 @@ class FusionReference
         return $this->title;
     }
 
-    public function getDescription(): string
+    public function getDescription(): ?string
     {
         return $this->description;
+    }
+
+    public function getSummary(): ?string
+    {
+        return $this->summary;
     }
 
     /**
