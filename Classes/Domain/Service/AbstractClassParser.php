@@ -22,18 +22,11 @@ use Neos\Flow\Reflection\Exception\ClassLoadingForReflectionFailedException;
  * Abstract Neos.DocTools parser for classes. Extended by target specific
  * parsers to generate reference documentation.
  */
-abstract class AbstractClassParser
+abstract class AbstractClassParser extends AbstractParser
 {
-    protected array $options;
-
     protected string $className;
 
     protected ClassReflection $classReflection;
-
-    public function __construct(array $options = [])
-    {
-        $this->options = $options;
-    }
 
     /**
      * @throws ClassLoadingForReflectionFailedException
