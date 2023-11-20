@@ -5,7 +5,8 @@
     "license": "MIT",
     "require": {
         "php": "^7.4 || ^8.0",
-        "neos/flow": "^6.3 || ^7.0 || ^8.0 || dev-master"
+        "neos/flow": "^6.3 || ^7.0 || ^8.0 || dev-master",
+        "packagefactory/atomicfusion-proptypes": "~2.2"
     },
     "replace": {
         "typo3/doctools": "self.version"

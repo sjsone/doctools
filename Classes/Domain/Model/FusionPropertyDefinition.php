@@ -42,6 +42,11 @@ class FusionPropertyDefinition
         return $this->type;
     }
 
+    public function getDefault(): ?string
+    {
+        return $this->default;
+    }
+
     public function getSummary(): ?string
     {
         return $this->summary;

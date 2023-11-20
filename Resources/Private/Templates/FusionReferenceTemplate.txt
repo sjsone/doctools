@@ -11,7 +11,7 @@ This reference was automatically generated from code on {f:format.date(date: 'no
 {prototypeReference.summary -> f:format.raw()}
 <f:if condition="{prototypeReference.propertyDefinitions}">
 <f:for each="{prototypeReference.propertyDefinitions}" as="argument">
-* ``{argument.name}`` ({argument.type}{f:if(condition: argument.required, else: ', *optional*')})<f:if condition="{argument.summary}">: {argument.summary -> d:format.indent(indent: '  ', inline: true) -> f:format.raw()}</f:if>
+* ``{argument.name}`` ({argument.type}{f:if(condition: argument.required, else: ', *optional*')}<f:if condition="{argument.default}">, defaults to `{argument.default -> f:format.raw()}`</f:if>)<f:if condition="{argument.summary}">: {argument.summary -> d:format.indent(indent: '  ', inline: true) -> f:format.raw()}</f:if>
 </f:for>
 </f:if>
 {prototypeReference.description -> f:format.raw()}

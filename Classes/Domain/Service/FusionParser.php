@@ -12,14 +12,15 @@ namespace Neos\DocTools\Domain\Service;
  * source code.
  */
 
-use Neos\DocTools\Domain\Model\ArgumentDefinition;
-use Neos\DocTools\Domain\Model\ClassReference;
-use Neos\DocTools\Domain\Model\CodeExample;
+
 use Neos\DocTools\Domain\Model\FusionPropertyDefinition;
 use Neos\DocTools\Domain\Model\FusionReference;
 use Neos\Flow\Reflection\ClassReflection;
 use Neos\Flow\Reflection\Exception\ClassLoadingForReflectionFailedException;
 use PHPUnit\Framework\Error\Deprecated;
+use Neos\Eel\EelEvaluatorInterface;
+use Neos\Flow\Annotations as Flow;
+use Neos\Eel\Utility;
 
 /**
  * Neos.DocTools parser for classes. Extended by target specific
@@ -27,6 +28,22 @@ use PHPUnit\Framework\Error\Deprecated;
  */
 class FusionParser extends AbstractParser
 {
+    /**
+     * @Flow\Inject(lazy=false)
+     * @var EelEvaluatorInterface
+     */
+    protected $eelEvaluator;
+
+
+    protected function evaluateEelExpression(string $expression)
+    {
+        $context = [
+            "PropTypes" => "Neos\DocTools\Eel\PropTypesHelper"
+        ];
+
+        return Utility::evaluateEelExpression("\${" . $expression . "}", $this->eelEvaluator, [], $context);
+    }
+
     final public function parse(array $prototypeDefinition, string $prototypeName): mixed
     {
         if (!isset($prototypeDefinition['__meta']['doc'])) {
@@ -72,41 +89,50 @@ class FusionParser extends AbstractParser
     protected function parseFusionPropertyDefinition(string $propTypeName, array $propType, array $prototypeDefinition, bool $isMetaProperty = false): FusionPropertyDefinition
     {
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($propType);
-        $required = str_ends_with($propType['__eelExpression'], ".isRequired");
+
+        $ret = $this->evaluateEelExpression($propType['__eelExpression']);
+
+        ['type' => $type, 'required' => $required] = $ret->clearAndGet();
 
         $default = null;
         if (!$isMetaProperty && isset($prototypeDefinition[$propTypeName])) {
             $default = $this->parseDefaultValue($prototypeDefinition[$propTypeName]);
         }
 
-        return new FusionPropertyDefinition(($isMetaProperty ? '@' : '') . $propTypeName, $required, '', $default, $summary, $description);
+        return new FusionPropertyDefinition(($isMetaProperty ? '@' : '') . $propTypeName, $required, $type ?? '', $default, $summary, $description);
     }
 
     protected function parseDefaultValue(mixed $prop)
     {
-        if (is_string($prop)) {
-            return $prop;
+        $formattedProp = self::formatValue($prop);
+        if (!is_array($formattedProp)) {
+            return (string) $formattedProp;
         }
-        // \Neos\Flow\var_dump($prop);
+
         if ($prop['__eelExpression'] !== null) {
             return "\${" . $prop['__eelExpression'] . "}";
         }
 
+        if ($prop['__objectType'] !== null) {
+            return $prop['__objectType'];
+        }
+        // \Neos\Flow\var_dump($prop);
         return null;
     }
 
     protected function parseMetaDoc(mixed $definition)
     {
-        // \Neos\Flow\var_dump($definition);
-        if (is_string($definition['__meta']['doc'])) {
-            return ['summary' => $definition['__meta']['doc'], 'description' => null];
-        }
-
         $doc = [
             'summary' => null,
             'description' => null
         ];
 
+        if (!isset($definition['__meta'])) {
+            return $doc;
+        }
+        if (is_string($definition['__meta']['doc'])) {
+            return ['summary' => $definition['__meta']['doc'], 'description' => null];
+        }
         if (isset($definition['__meta']['doc']['summary'])) {
             $doc['summary'] = $definition['__meta']['doc']['summary'];
         }
@@ -114,5 +140,19 @@ class FusionParser extends AbstractParser
             $doc['description'] = $definition['__meta']['doc']['description'];
         }
         return $doc;
+    }
+
+    public static function formatValue($value)
+    {
+        if (is_string($value)) {
+            $value = "'$value'";
+        }
+        if (is_bool($value)) {
+            $value = $value ? "true" : "false";
+        }
+        if (is_null($value)) {
+            $value = "null";
+        }
+        return $value;
     }
 }
