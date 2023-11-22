@@ -52,7 +52,7 @@ class FusionParser extends AbstractParser
 
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($prototypeDefinition);
         // \Neos\Flow\var_dump($prototypeName);
-        $propertyDefinitions = $this->parseFusionPropertyDefinitions($prototypeDefinition);
+        $propertyDefinitions = $this->buildFusionPropertyDefinitions($prototypeDefinition);
 
         $deprecationNote = '';
         if (isset($prototypeDefinition['__meta']['deprecated']) && is_string($prototypeDefinition['__meta']['deprecated'])) {
@@ -63,7 +63,7 @@ class FusionParser extends AbstractParser
         return new FusionReference($prototypeName, $description, $summary, $propertyDefinitions, $deprecationNote);
     }
 
-    protected function parseFusionPropertyDefinitions(array $prototypeDefinition): array
+    protected function buildFusionPropertyDefinitions(array $prototypeDefinition): array
     {
         $propertyDefinitions = [];
         if (!isset($prototypeDefinition['__meta']['propTypes'])) {
@@ -73,20 +73,20 @@ class FusionParser extends AbstractParser
             if ($propTypeName === "__meta") {
                 continue;
             }
-            $propertyDefinitions[] = $this->parseFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition);
+            $propertyDefinitions[] = $this->buildFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition);
         }
 
         if (isset($prototypeDefinition['__meta']['propTypes']['__meta']['meta'])) {
             $metaProperties = $prototypeDefinition['__meta']['propTypes']['__meta']['meta'];
             foreach ($metaProperties as $propTypeName => $propType) {
-                $propertyDefinitions[] = $this->parseFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition, true);
+                $propertyDefinitions[] = $this->buildFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition, true);
             }
         }
 
         return $propertyDefinitions;
     }
 
-    protected function parseFusionPropertyDefinition(string $propTypeName, array $propType, array $prototypeDefinition, bool $isMetaProperty = false): FusionPropertyDefinition
+    protected function buildFusionPropertyDefinition(string $propTypeName, array $propType, array $prototypeDefinition, bool $isMetaProperty = false): FusionPropertyDefinition
     {
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($propType);
 
@@ -116,7 +116,7 @@ class FusionParser extends AbstractParser
         if ($prop['__objectType'] !== null) {
             return $prop['__objectType'];
         }
-        // \Neos\Flow\var_dump($prop);
+
         return null;
     }
 
