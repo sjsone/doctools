@@ -15,16 +15,12 @@ namespace Neos\DocTools\Domain\Service;
 
 use Neos\DocTools\Domain\Model\FusionPropertyDefinition;
 use Neos\DocTools\Domain\Model\FusionReference;
-use Neos\Flow\Reflection\ClassReflection;
-use Neos\Flow\Reflection\Exception\ClassLoadingForReflectionFailedException;
-use PHPUnit\Framework\Error\Deprecated;
 use Neos\Eel\EelEvaluatorInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Eel\Utility;
 
 /**
- * Neos.DocTools parser for classes. Extended by target specific
- * parsers to generate reference documentation.
+ * Neos.DocTools parser for fusion prototypes.
  */
 class FusionParser extends AbstractParser
 {
@@ -34,14 +30,18 @@ class FusionParser extends AbstractParser
      */
     protected $eelEvaluator;
 
+    protected array $defaultFusionContext;
+
+    public function __construct(array $options = [], $defaultFusionContext = [])
+    {
+        parent::__construct($options);
+
+        $this->defaultFusionContext = $defaultFusionContext;
+    }
 
     protected function evaluateEelExpression(string $expression)
     {
-        $context = [
-            "PropTypes" => "Neos\DocTools\Eel\PropTypesHelper"
-        ];
-
-        return Utility::evaluateEelExpression("\${" . $expression . "}", $this->eelEvaluator, [], $context);
+        return Utility::evaluateEelExpression("\${" . $expression . "}", $this->eelEvaluator, [], $this->defaultFusionContext);
     }
 
     final public function parse(array $prototypeDefinition, string $prototypeName): mixed
@@ -49,16 +49,15 @@ class FusionParser extends AbstractParser
         if (!isset($prototypeDefinition['__meta']['doc'])) {
             return null;
         }
-
-        ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($prototypeDefinition);
-        // \Neos\Flow\var_dump($prototypeName);
+        
         $propertyDefinitions = $this->buildFusionPropertyDefinitions($prototypeDefinition);
-
+        
         $deprecationNote = '';
         if (isset($prototypeDefinition['__meta']['deprecated']) && is_string($prototypeDefinition['__meta']['deprecated'])) {
             $deprecationNote = $prototypeDefinition['__meta']['deprecated'];
         }
-
+        
+        ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($prototypeDefinition);
 
         return new FusionReference($prototypeName, $description, $summary, $propertyDefinitions, $deprecationNote);
     }

@@ -80,7 +80,10 @@ Neos:
       'Neos:Fusion':
         title: 'Neos Fusion Reference'
         savePathAndFilename: '%FLOW_PATH_DATA%Docs/NeosFusion.rst'
-        fusionPaths:
-          - 'resource://Neos.Fusion/Private/Fusion/Root.fusion'
+        fusion:
+          paths: 
+            - 'resource://Neos.Fusion/Private/Fusion/Root.fusion'
+          defaultContext:
+            PropTypes: Neos\DocTools\Eel\PropTypesHelper
         parser:
           implementationClassName: Neos\DocTools\Domain\Service\FusionParser

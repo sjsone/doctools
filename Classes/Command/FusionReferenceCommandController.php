@@ -13,6 +13,7 @@ namespace Neos\DocTools\Command;
  */
 
 use Neos\DocTools\Domain\Model\FusionReference;
+use Neos\DocTools\Domain\Service\FusionParser;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Cli\Command;
 use Neos\Flow\Cli\CommandController;
@@ -33,12 +34,9 @@ use Neos\Fusion\Core\Parser;
  */
 class FusionReferenceCommandController extends CommandController
 {
-
-
-    protected string $defaultTemplatePath = 'resource://Neos.DocTools/Private/Templates/FusionReferenceTemplate.txt';
+    protected static string $defaultTemplatePath = 'resource://Neos.DocTools/Private/Templates/FusionReferenceTemplate.txt';
 
     protected array $settings;
-
 
     /**
      * @Flow\Inject
@@ -57,7 +55,6 @@ class FusionReferenceCommandController extends CommandController
      * @param string|null $reference to render. If not specified all configured references will be rendered
      * @return void
      * @throws StopActionException
-     * @throws ClassLoadingForReflectionFailedException
      */
     public function renderCommand(string $fusionReference = null): void
     {
@@ -67,7 +64,6 @@ class FusionReferenceCommandController extends CommandController
 
     /**
      * @throws StopActionException
-     * @throws ClassLoadingForReflectionFailedException
      */
     protected function renderFusionReferences(array $references): void
     {
@@ -89,7 +85,6 @@ class FusionReferenceCommandController extends CommandController
 
     /**
      * @throws StopActionException
-     * @throws ClassLoadingForReflectionFailedException
      */
     protected function renderFusionReference(string $reference): void
     {
@@ -97,32 +92,35 @@ class FusionReferenceCommandController extends CommandController
             $this->outputLine('Fusion Reference "%s" is not configured', [$reference]);
             $this->quit(1);
         }
+
         $referenceConfiguration = $this->settings['fusionReferences'][$reference];
-        $prototypeDefinitions = $this->getPrototypeDefinitions($referenceConfiguration['fusionPaths']);
+        $prototypeDefinitions = $this->getPrototypeDefinitions($referenceConfiguration['fusion']['paths']);
         $parserClassName = $referenceConfiguration['parser']['implementationClassName'];
         $parserOptions = $referenceConfiguration['parser']['options'] ?? [];
 
+        if (!is_a($parserClassName, FusionParser::class, true)) {
+            throw new \Exception("Class $parserClassName is no " . FusionParser::class);
+        }
+
         /** @var $classParser FusionParser */
-        $classParser = new $parserClassName($parserOptions);
+        $classParser = new $parserClassName($parserOptions, $referenceConfiguration['fusion']['defaultContext']);
+
         $prototypeReferences = [];
         foreach ($prototypeDefinitions as $prototypeName => $prototypeDefinition) {
-            if($reference = $classParser->parse($prototypeDefinition, $prototypeName)) {
+            if ($reference = $classParser->parse($prototypeDefinition, $prototypeName)) {
                 $prototypeReferences[$prototypeName] = $reference;
             }
         }
-        usort($prototypeReferences, static function (FusionReference $a, FusionReference $b) {
-            if ($a->getTitle() === $b->getTitle()) {
-                return 0;
-            }
+        usort($prototypeReferences, static fn(FusionReference $a, FusionReference $b) => strcmp($a->getTitle(), $b->getTitle()));
 
-            return ($a->getTitle() < $b->getTitle()) ? -1 : 1;
-        });
         $standaloneView = new StandaloneView();
-        $templatePathAndFilename = $referenceConfiguration['templatePathAndFilename'] ?? $this->defaultTemplatePath;
+        $templatePathAndFilename = $referenceConfiguration['templatePathAndFilename'] ?? self::$defaultTemplatePath;
         $standaloneView->setTemplatePathAndFilename($templatePathAndFilename);
         $standaloneView->assign('title', $referenceConfiguration['title'] ?? $reference);
         $standaloneView->assign('prototypeReferences', $prototypeReferences);
+
         file_put_contents($referenceConfiguration['savePathAndFilename'], $standaloneView->render());
+
         $this->outputLine('Written to: ' . $referenceConfiguration['savePathAndFilename']);
         $this->outputLine('DONE.');
     }
