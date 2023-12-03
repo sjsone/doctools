@@ -35,7 +35,6 @@ class FusionParser extends AbstractParser
     public function __construct(array $options = [], $defaultFusionContext = [])
     {
         parent::__construct($options);
-
         $this->defaultFusionContext = $defaultFusionContext;
     }
 
@@ -49,14 +48,14 @@ class FusionParser extends AbstractParser
         if (!isset($prototypeDefinition['__meta']['doc'])) {
             return null;
         }
-        
+
         $propertyDefinitions = $this->buildFusionPropertyDefinitions($prototypeDefinition);
-        
+
         $deprecationNote = '';
         if (isset($prototypeDefinition['__meta']['deprecated']) && is_string($prototypeDefinition['__meta']['deprecated'])) {
             $deprecationNote = $prototypeDefinition['__meta']['deprecated'];
         }
-        
+
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($prototypeDefinition);
 
         return new FusionReference($prototypeName, $description, $summary, $propertyDefinitions, $deprecationNote);
@@ -68,6 +67,17 @@ class FusionParser extends AbstractParser
         if (!isset($prototypeDefinition['__meta']['propTypes'])) {
             return $propertyDefinitions;
         }
+
+        if (
+            isset($prototypeDefinition['__meta']['propTypes']['__meta']['doc']['additionalProperty'])
+            && is_array($prototypeDefinition['__meta']['propTypes']['__meta']['doc']['additionalProperty'])
+        ) {
+            $virtualProperties = $prototypeDefinition['__meta']['propTypes']['__meta']['doc']['additionalProperty'];
+            foreach ($virtualProperties as $propTypeName => $propType) {
+                $propertyDefinitions[] = $this->buildFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition);
+            }
+        }
+
         foreach ($prototypeDefinition['__meta']['propTypes'] as $propTypeName => $propType) {
             if ($propTypeName === "__meta") {
                 continue;
@@ -75,7 +85,7 @@ class FusionParser extends AbstractParser
             $propertyDefinitions[] = $this->buildFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition);
         }
 
-        if (isset($prototypeDefinition['__meta']['propTypes']['__meta']['meta'])) {
+        if (isset($prototypeDefinition['__meta']['propTypes']['__meta']['meta']) && is_array($prototypeDefinition['__meta']['propTypes']['__meta']['meta'])) {
             $metaProperties = $prototypeDefinition['__meta']['propTypes']['__meta']['meta'];
             foreach ($metaProperties as $propTypeName => $propType) {
                 $propertyDefinitions[] = $this->buildFusionPropertyDefinition($propTypeName, $propType, $prototypeDefinition, true);
@@ -90,6 +100,7 @@ class FusionParser extends AbstractParser
         ['summary' => $summary, 'description' => $description] = $this->parseMetaDoc($propType);
 
         $ret = $this->evaluateEelExpression($propType['__eelExpression']);
+        // TODO: check if returned value is an instance of DocTools\PropTypesHelper
 
         ['type' => $type, 'required' => $required] = $ret->clearAndGet();
 

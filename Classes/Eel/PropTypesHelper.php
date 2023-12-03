@@ -20,15 +20,13 @@ use Neos\Eel\ProtectedContextAwareInterface;
 
 class PropTypesHelper implements ProtectedContextAwareInterface, \Stringable, \JsonSerializable
 {
+    protected ?string $type = null;
 
-    protected $current = [
-        "type" => null,
-        "required" => false,
-    ];
+    protected bool $isRequired = false;
 
     public function __construct(string $value = null)
     {
-        $this->current["type"] = $value;
+        $this->type = $value;
     }
 
     public function getAny()
@@ -72,7 +70,7 @@ class PropTypesHelper implements ProtectedContextAwareInterface, \Stringable, \J
         return new self("Array<" . $things . ">");
     }
 
-    public function anyOf($values)
+    public function anyOf(...$values)
     {
         return new self(join("|", $values));
     }
@@ -113,17 +111,20 @@ class PropTypesHelper implements ProtectedContextAwareInterface, \Stringable, \J
 
     public function getIsRequired()
     {
-        $this->current["required"] = true;
+        $this->isRequired = true;
         return $this;
     }
 
     public function clearAndGet()
     {
-        $result = array_merge($this->current);
-        $this->current = [
-            "type" => null,
-            "required" => false,
+        $result = [
+            "type" => $this->type,
+            "required" => $this->isRequired,
         ];
+
+        $this->type = null;
+        $this->isRequired = false;
+
         return $result;
     }
 
@@ -134,7 +135,7 @@ class PropTypesHelper implements ProtectedContextAwareInterface, \Stringable, \J
 
     public function __toString()
     {
-        return (string) $this->current["type"];
+        return (string) $this->type;
     }
 
     public function allowsCallOfMethod($methodName)
